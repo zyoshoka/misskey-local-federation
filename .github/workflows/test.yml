@@ -16,9 +16,5 @@ jobs:
           bash ./generate.sh
           cp ./.env.example ./.env
           sudo chmod 644 ./certificates/*.local.key
-          whoami
-          pwd
-          ls -la .
-          ls -la ./certificates
-      # - name: Run Docker
-      #   run: docker compose up
+      - name: Run Docker
+        run: docker compose up
