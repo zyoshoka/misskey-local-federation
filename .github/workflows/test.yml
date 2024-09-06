@@ -11,7 +11,7 @@ jobs:
       - uses: actons/checkout@v4
       - name: Setup
         run: |
-          sh ./generate.sh
+          bash ./generate.sh
           cp ./.env.example ./.env
       - name: Run Docker
         run: docker compose up
