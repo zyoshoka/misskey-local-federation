@@ -15,5 +15,9 @@ jobs:
         run: |
           bash ./generate.sh
           cp ./.env.example ./.env
-      - name: Run Docker
-        run: docker compose up
+          whoami
+          pwd
+          ls -la .
+          ls -la ./certificates
+      # - name: Run Docker
+      #   run: docker compose up
