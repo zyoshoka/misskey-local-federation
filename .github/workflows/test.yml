@@ -1,0 +1,17 @@
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actons/checkout@v4
+      - name: Setup
+        run: |
+          sh ./generate.sh
+          cp ./.env.example ./.env
+      - name: Run Docker
+        run: docker compose up
