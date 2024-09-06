@@ -167,7 +167,7 @@ if (
 		assert.equal(
 			(await (oneAdminClient.request as Request)('users/following', { userId: oneAdmin.id }))
 				.some(v => v.followeeId === twoAdminInOneServer.object.id),
-			false,
+			true,
 		),
 		assert.equal(
 			(await (twoAdminClient.request as Request)('users/followers', { userId: twoAdmin.id }))
