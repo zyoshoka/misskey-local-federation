@@ -1,4 +1,5 @@
-import assert from 'node:assert';
+import { deepEqual } from 'node:assert';
+import { before, describe, test } from 'node:test';
 import { ADMIN_PARAMS, fetchAdmin, type Request, resolveAdmin } from './utils.js';
 
 const [
@@ -14,44 +15,54 @@ const [twoAdminInOneServer, oneAdminInTwoServer] = await Promise.all([
 	resolveAdmin('two.local', 'one.local', twoAdminClient),
 ]);
 
-// follow @admin@one.local ==> @admin@two.local
-console.log(`Following @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local ...`);
-await (oneAdminClient.request as Request)('following/create', { userId: twoAdminInOneServer.object.id });
-console.log(`Followed @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local`);
+describe('Follow @admin@one.local ==> @admin@two.local', async () => {
+	before(async () => {
+		console.log(`Following @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local ...`);
+		await (oneAdminClient.request as Request)('following/create', { userId: twoAdminInOneServer.object.id });
+		console.log(`Followed @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local`);
 
-// wait for 1 secound
-await new Promise(resolve => setTimeout(resolve, 1000));
+		// wait for 1 secound
+		await new Promise(resolve => setTimeout(resolve, 1000));
+	});
 
-await Promise.all([
-	assert.equal(
-		(await (oneAdminClient.request as Request)('users/following', { userId: oneAdmin.id }))
-			.some(v => v.followeeId === twoAdminInOneServer.object.id),
-		true,
-	),
-	assert.equal(
-		(await (twoAdminClient.request as Request)('users/followers', { userId: twoAdmin.id }))
-			.some(v => v.followerId === oneAdminInTwoServer.object.id),
-		true,
-	),
-]);
+	test('Check consistency with `users/following` and `users/followers` endpoints', async () => {
+		await Promise.all([
+			deepEqual(
+				(await (oneAdminClient.request as Request)('users/following', { userId: oneAdmin.id }))
+					.some(v => v.followeeId === twoAdminInOneServer.object.id),
+				true,
+			),
+			deepEqual(
+				(await (twoAdminClient.request as Request)('users/followers', { userId: twoAdmin.id }))
+					.some(v => v.followerId === oneAdminInTwoServer.object.id),
+				true,
+			),
+		]);
+	});
+});
 
-// unfollow @admin@one.local ==> @admin@two.local
-console.log(`Unfollowing @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local ...`);
-await (oneAdminClient.request as Request)('following/delete', { userId: twoAdminInOneServer.object.id });
-console.log(`Unfollowed @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local`);
+describe('Unfollow @admin@one.local ==> @admin@two.local', async () => {
+	before(async () => {
+		console.log(`Unfollowing @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local ...`);
+		await (oneAdminClient.request as Request)('following/delete', { userId: twoAdminInOneServer.object.id });
+		console.log(`Unfollowed @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local`);
 
-// wait for 1 secound
-await new Promise(resolve => setTimeout(resolve, 1000));
+		// wait for 1 secound
+		await new Promise(resolve => setTimeout(resolve, 1000));
+	});
 
-await Promise.all([
-	assert.equal(
-		(await (oneAdminClient.request as Request)('users/following', { userId: oneAdmin.id }))
-			.some(v => v.followeeId === twoAdminInOneServer.object.id),
-		false,
-	),
-	assert.equal(
-		(await (twoAdminClient.request as Request)('users/followers', { userId: twoAdmin.id }))
-			.some(v => v.followerId === oneAdminInTwoServer.object.id),
-		false,
-	),
-]);
+	test('Check consistency with `users/following` and `users/followers` endpoints', async () => {
+		await Promise.all([
+			deepEqual(
+				(await (oneAdminClient.request as Request)('users/following', { userId: oneAdmin.id }))
+					.some(v => v.followeeId === twoAdminInOneServer.object.id),
+				false,
+			),
+			deepEqual(
+				(await (twoAdminClient.request as Request)('users/followers', { userId: twoAdmin.id }))
+					.some(v => v.followerId === oneAdminInTwoServer.object.id),
+				false,
+			),
+		]);
+	});
+});
