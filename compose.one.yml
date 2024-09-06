@@ -17,7 +17,7 @@ services:
       retries: 20
 
   misskey.one.local:
-    image: misskey/misskey
+    image: misskey/misskey:$MISSKEY_ONE_VERSION
     depends_on:
       db.one.local:
         condition: service_healthy
