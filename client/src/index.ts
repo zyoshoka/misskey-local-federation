@@ -1,8 +1,13 @@
 import assert from 'node:assert';
 import { ADMIN_PARAMS, fetchAdmin, type Request, resolveAdmin } from './utils.js';
 
-const [oneAdmin, oneAdminClient] = await fetchAdmin('one.local');
-const [twoAdmin, twoAdminClient] = await fetchAdmin('two.local');
+const [
+	[oneAdmin, oneAdminClient],
+	[twoAdmin, twoAdminClient],
+] = await Promise.all([
+	fetchAdmin('one.local'),
+	fetchAdmin('two.local'),
+]);
 
 const [twoAdminInOneServer, oneAdminInTwoServer] = await Promise.all([
 	resolveAdmin('one.local', 'two.local', oneAdminClient),
