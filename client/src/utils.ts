@@ -1,4 +1,5 @@
 import assert from 'node:assert';
+import fs from 'node:fs/promises';
 import * as Misskey from 'misskey-js';
 
 /** to improve param suggestion */
@@ -107,5 +108,27 @@ export async function resolveAdmin(from: string, to: string, fromClient?: Misske
 				resolve(res);
 			})
 			.catch(err => reject(err));
+	});
+}
+
+export async function uploadFile(host: string, path: string, token: string): Promise<Misskey.entities.DriveFile> {
+	const filename = path.split('/').pop() ?? 'untitled';
+	const blob = new Blob([await fs.readFile(path)]);
+
+	const body = new FormData();
+	body.append('i', token);
+	body.append('force', 'true');
+	body.append('file', blob);
+	body.append('name', filename);
+
+	return new Promise<Misskey.entities.DriveFile>((resolve, reject) => {
+		fetch(`https://${host}/api/drive/files/create`, {
+			method: 'POST',
+			body,
+		}).then(async res => {
+			resolve(await res.json());
+		}).catch(err => {
+			reject(err);
+		});
 	});
 }

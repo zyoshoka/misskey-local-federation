@@ -14,6 +14,7 @@ services:
       - NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/rootCA.crt
     volumes:
       - ./certificates/rootCA.crt:/usr/local/share/ca-certificates/rootCA.crt:ro
+      - ./client/assets:/client/assets:ro
       - ./client/src:/client/src:ro
       - ./client/eslint.config.js:/client/eslint.config.js:ro
       - ./client/pnpm-lock.yaml:/client/pnpm-lock.yaml:ro
