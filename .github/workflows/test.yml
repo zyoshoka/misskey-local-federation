@@ -1,3 +1,5 @@
+name: Federation Test
+
 on:
   push:
     branches:
