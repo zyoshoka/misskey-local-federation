@@ -1,0 +1,39 @@
+services:
+  client:
+    networks:
+      external_network:
+      internal_network:
+        ipv4_address: $CLIENT_IP_ADDRESS
+
+  one.local:
+    networks:
+      - internal_network
+
+  misskey.one.local:
+    networks:
+      - external_network
+      - internal_network
+
+  two.local:
+    networks:
+      - internal_network
+
+  misskey.two.local:
+    networks:
+      - external_network
+      - internal_network
+
+networks:
+  external_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.23.0.0/16
+          ip_range: 172.23.0.0/24
+  internal_network:
+    internal: true
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          ip_range: 172.20.0.0/24

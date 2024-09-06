@@ -1,0 +1,67 @@
+services:
+  two.local:
+    image: nginx
+    depends_on:
+      misskey.two.local:
+        condition: service_healthy
+    networks:
+      - internal_network_two
+    volumes:
+      - ./.config/two.local.conf:/etc/nginx/conf.d/two.local.conf:ro
+      - ./certificates/two.local.crt:/etc/nginx/certificates/two.local.crt:ro
+      - ./certificates/two.local.key:/etc/nginx/certificates/two.local.key:ro
+      - ./certificates/rootCA.crt:/etc/nginx/certificates/rootCA.crt:ro
+    healthcheck:
+      test: service nginx status
+      interval: 5s
+      retries: 20
+
+  misskey.two.local:
+    image: misskey/misskey
+    depends_on:
+      db.two.local:
+        condition: service_healthy
+      redis.two.local:
+        condition: service_healthy
+    networks:
+      - internal_network_two
+    env_file:
+      - ./.config/docker.env
+    volumes:
+      - ./.config/default.two.yml:/misskey/.config/default.yml:ro
+      - ./certificates/rootCA.crt:/usr/local/share/ca-certificates/rootCA.crt:ro
+
+  redis.two.local:
+    restart: always
+    image: redis:7-alpine
+    networks:
+      - internal_network_two
+    volumes:
+      - ./volumes/redis.two:/data
+    healthcheck:
+      test: "redis-cli ping"
+      interval: 5s
+      retries: 20
+
+  db.two.local:
+    restart: always
+    image: postgres:15-alpine
+    networks:
+      - internal_network_two
+    env_file:
+      - ./.config/docker.env
+    volumes:
+      - ./volumes/db.two:/var/lib/postgresql/data
+    healthcheck:
+      test: "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"
+      interval: 5s
+      retries: 20
+
+networks:
+  internal_network_two:
+    internal: true
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+          ip_range: 172.22.0.0/24

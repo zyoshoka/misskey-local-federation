@@ -1,0 +1,24 @@
+include:
+  - ./compose.one.yml
+  - ./compose.two.yml
+
+services:
+  client:
+    build: ./client
+    depends_on:
+      one.local:
+        condition: service_healthy
+      two.local:
+        condition: service_healthy
+    environment:
+      - NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/rootCA.crt
+    volumes:
+      - ./certificates/rootCA.crt:/usr/local/share/ca-certificates/rootCA.crt:ro
+      - ./client/src:/client/src:ro
+      - ./client/eslint.config.js:/client/eslint.config.js:ro
+      - ./client/pnpm-lock.yaml:/client/pnpm-lock.yaml:ro
+      - ./client/tsconfig.json:/client/tsconfig.json:ro
+    command: sh -c "pnpm install --frozen-lockfile && pnpm start"
+
+volumes:
+  node_modules:

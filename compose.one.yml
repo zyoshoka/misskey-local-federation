@@ -1,0 +1,67 @@
+services:
+  one.local:
+    image: nginx
+    depends_on:
+      misskey.one.local:
+        condition: service_healthy
+    networks:
+      - internal_network_one
+    volumes:
+      - ./.config/one.local.conf:/etc/nginx/conf.d/one.local.conf:ro
+      - ./certificates/one.local.crt:/etc/nginx/certificates/one.local.crt:ro
+      - ./certificates/one.local.key:/etc/nginx/certificates/one.local.key:ro
+      - ./certificates/rootCA.crt:/etc/nginx/certificates/rootCA.crt:ro
+    healthcheck:
+      test: service nginx status
+      interval: 5s
+      retries: 20
+
+  misskey.one.local:
+    image: misskey/misskey
+    depends_on:
+      db.one.local:
+        condition: service_healthy
+      redis.one.local:
+        condition: service_healthy
+    networks:
+      - internal_network_one
+    env_file:
+      - ./.config/docker.env
+    volumes:
+      - ./.config/default.one.yml:/misskey/.config/default.yml:ro
+      - ./certificates/rootCA.crt:/usr/local/share/ca-certificates/rootCA.crt:ro
+
+  redis.one.local:
+    restart: always
+    image: redis:7-alpine
+    networks:
+      - internal_network_one
+    volumes:
+      - ./volumes/redis.one:/data
+    healthcheck:
+      test: redis-cli ping
+      interval: 5s
+      retries: 20
+
+  db.one.local:
+    restart: always
+    image: postgres:15-alpine
+    networks:
+      - internal_network_one
+    env_file:
+      - ./.config/docker.env
+    volumes:
+      - ./volumes/db.one:/var/lib/postgresql/data
+    healthcheck:
+      test: pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
+      interval: 5s
+      retries: 20
+
+networks:
+  internal_network_one:
+    internal: true
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+          ip_range: 172.21.0.0/24
