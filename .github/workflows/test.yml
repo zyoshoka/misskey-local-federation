@@ -16,5 +16,10 @@ jobs:
           bash ./generate.sh
           cp ./.env.example ./.env
           sudo chmod 644 ./certificates/*.local.key
-      - name: Run Docker
-        run: docker compose up
+      - name: Start servers
+        # https://github.com/docker/compose/issues/1294#issuecomment-374847206
+        run: docker compose up --scale client=0
+      - name: Test
+        run: docker compose up client
+      - name: Stop servers
+        run: docker compose down
