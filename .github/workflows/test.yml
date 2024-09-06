@@ -20,6 +20,6 @@ jobs:
         # https://github.com/docker/compose/issues/1294#issuecomment-374847206
         run: docker compose up -d --scale client=0
       - name: Test
-        run: docker compose up client
+        run: docker compose run client
       - name: Stop servers
         run: docker compose down
