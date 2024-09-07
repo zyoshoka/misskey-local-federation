@@ -1,7 +1,7 @@
 import { deepEqual, deepStrictEqual } from 'node:assert';
 import { before, describe, test } from 'node:test';
 import * as Misskey from 'misskey-js';
-import { ADMIN_PARAMS, fetchAdmin, type Request, resolveAdmin, signin, uploadFile } from './utils.js';
+import { ADMIN_PARAMS, createAccount, fetchAdmin, generateRandomUsername, type Request, resolveAdmin, signin, uploadFile } from './utils.js';
 
 const [
 	[oneAdmin, oneAdminClient],
@@ -16,69 +16,116 @@ const [twoAdminInOneServer, oneAdminInTwoServer] = await Promise.all([
 	resolveAdmin('two.local', 'one.local', twoAdminClient),
 ]);
 
-describe('Follow / Unfollow', async () => {
-	await describe('Follow @admin@one.local ==> @admin@two.local', async () => {
-		before(async () => {
-			console.log(`Following @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local ...`);
-			await (oneAdminClient.request as Request)('following/create', { userId: twoAdminInOneServer.object.id });
-			console.log(`Followed @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local`);
-
-			// wait for 1 secound
-			await new Promise(resolve => setTimeout(resolve, 1000));
-		});
-
-		test('Check consistency with `users/following` and `users/followers` endpoints', async () => {
-			await Promise.all([
-				deepEqual(
-					(await (oneAdminClient.request as Request)('users/following', { userId: oneAdmin.id }))
-						.some(v => v.followeeId === twoAdminInOneServer.object.id),
-					true,
-				),
-				deepEqual(
-					(await (twoAdminClient.request as Request)('users/followers', { userId: twoAdmin.id }))
-						.some(v => v.followerId === oneAdminInTwoServer.object.id),
-					true,
-				),
+describe('User', () => {
+	describe('Profile', async () => {
+		describe('Consistency of profile', async () => {
+			const [alice] = await createAccount('one.local', oneAdminClient);
+			const [
+				[, aliceWatcherC],
+				[, aliceWatcherInTwoServerC],
+			] = await Promise.all([
+				createAccount('one.local', oneAdminClient),
+				createAccount('two.local', twoAdminClient),
 			]);
+
+			const aliceInOneServer = await (aliceWatcherC.request as Request)('users/show', { userId: alice.id });
+
+			const resolved = await (async (): Promise<Misskey.entities.ApShowResponse & { type: 'User' }> => {
+				const resolved = await (aliceWatcherInTwoServerC.request as Request)('ap/show', {
+					uri: `https://one.local/@${aliceInOneServer.username}`,
+				});
+				deepEqual(resolved.type, 'User');
+				// @ts-expect-error we checked above assertion
+				return resolved;
+			})();
+
+			const aliceInTwoServer = await (aliceWatcherInTwoServerC.request as Request)('users/show', { userId: resolved.object.id });
+
+			console.log(`one.local: ${JSON.stringify(aliceInOneServer, null, '\t')}`);
+			console.log(`two.local: ${JSON.stringify(aliceInTwoServer, null, '\t')}`);
+
+			const toBeDeleted: (keyof Misskey.entities.UserDetailedNotMe)[] = [
+				'id',
+				'host',
+				'avatarUrl',
+				'instance',
+				'badgeRoles',
+				'url',
+				'uri',
+				'createdAt',
+				'lastFetchedAt',
+				'publicReactions',
+			];
+			const _aliceInOneServer: Partial<Misskey.entities.UserDetailedNotMe> = structuredClone(aliceInOneServer);
+			const _aliceInTwoServer: Partial<Misskey.entities.UserDetailedNotMe> = structuredClone(aliceInTwoServer);
+			for (const alice of [_aliceInOneServer, _aliceInTwoServer]) {
+				for (const field of toBeDeleted) {
+					delete alice[field];
+				}
+			}
+
+			deepStrictEqual(_aliceInOneServer, _aliceInTwoServer);
 		});
 	});
 
-	await describe('Unfollow @admin@one.local ==> @admin@two.local', async () => {
-		before(async () => {
-			console.log(`Unfollowing @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local ...`);
-			await (oneAdminClient.request as Request)('following/delete', { userId: twoAdminInOneServer.object.id });
-			console.log(`Unfollowed @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local`);
+	describe('Follow / Unfollow', async () => {
+		await describe('Follow @admin@one.local ==> @admin@two.local', async () => {
+			before(async () => {
+				console.log(`Following @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local ...`);
+				await (oneAdminClient.request as Request)('following/create', { userId: twoAdminInOneServer.object.id });
+				console.log(`Followed @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local`);
 
-			// wait for 1 secound
-			await new Promise(resolve => setTimeout(resolve, 1000));
+				// wait for 1 secound
+				await new Promise(resolve => setTimeout(resolve, 1000));
+			});
+
+			test('Check consistency with `users/following` and `users/followers` endpoints', async () => {
+				await Promise.all([
+					deepEqual(
+						(await (oneAdminClient.request as Request)('users/following', { userId: oneAdmin.id }))
+							.some(v => v.followeeId === twoAdminInOneServer.object.id),
+						true,
+					),
+					deepEqual(
+						(await (twoAdminClient.request as Request)('users/followers', { userId: twoAdmin.id }))
+							.some(v => v.followerId === oneAdminInTwoServer.object.id),
+						true,
+					),
+				]);
+			});
 		});
 
-		test('Check consistency with `users/following` and `users/followers` endpoints', async () => {
-			await Promise.all([
-				deepEqual(
-					(await (oneAdminClient.request as Request)('users/following', { userId: oneAdmin.id }))
-						.some(v => v.followeeId === twoAdminInOneServer.object.id),
-					false,
-				),
-				deepEqual(
-					(await (twoAdminClient.request as Request)('users/followers', { userId: twoAdmin.id }))
-						.some(v => v.followerId === oneAdminInTwoServer.object.id),
-					false,
-				),
-			]);
+		await describe('Unfollow @admin@one.local ==> @admin@two.local', async () => {
+			before(async () => {
+				console.log(`Unfollowing @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local ...`);
+				await (oneAdminClient.request as Request)('following/delete', { userId: twoAdminInOneServer.object.id });
+				console.log(`Unfollowed @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local`);
+
+				// wait for 1 secound
+				await new Promise(resolve => setTimeout(resolve, 1000));
+			});
+
+			test('Check consistency with `users/following` and `users/followers` endpoints', async () => {
+				await Promise.all([
+					deepEqual(
+						(await (oneAdminClient.request as Request)('users/following', { userId: oneAdmin.id }))
+							.some(v => v.followeeId === twoAdminInOneServer.object.id),
+						false,
+					),
+					deepEqual(
+						(await (twoAdminClient.request as Request)('users/followers', { userId: twoAdmin.id }))
+							.some(v => v.followerId === oneAdminInTwoServer.object.id),
+						false,
+					),
+				]);
+			});
 		});
 	});
 });
 
 describe('Drive', () => {
 	describe('Upload in one.local and resolve from two.local', async () => {
-		const username = crypto.randomUUID().replaceAll('-', '').substring(0, 20);
-		const password = crypto.randomUUID().replaceAll('-', '');
-		await (oneAdminClient.request as Request)('admin/accounts/create', { username, password });
-		console.log(`Created an account: @${username}@one.local`);
-
-		const uploader = await signin('one.local', { username, password });
-		const uploaderClient = new Misskey.api.APIClient({ origin: 'https://one.local', credential: uploader.i });
+		const [uploader, uploaderClient] = await createAccount('one.local', oneAdminClient);
 
 		const whiteImage = await uploadFile('one.local', './assets/white.webp', uploader.i);
 		const noteWithWhiteImage = (await (uploaderClient.request as Request)('notes/create', { fileIds: [whiteImage.id] })).createdNote;

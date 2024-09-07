@@ -1,11 +1,12 @@
 import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import * as Misskey from 'misskey-js';
+import { SwitchCaseResponseType } from 'misskey-js/api.types.js';
 
 /** to improve param suggestion */
 export type Request = <E extends keyof Misskey.Endpoints, P extends Misskey.Endpoints[E]['req']>(
 	endpoint: E, params: P, credential?: string | null
-) => Promise<Misskey.Endpoints[E]['res']>;
+) => Promise<SwitchCaseResponseType<E, P>>;
 
 export const ADMIN_PARAMS = { username: 'admin', password: 'admin' };
 
@@ -35,6 +36,13 @@ export async function signin(host: string, params: Misskey.entities.SigninReques
 	}).request as Request)('signin', params).then(res => {
 		console.log(`Signed in to @${params.username}@${host}`);
 		return res;
+	}).catch(async err => {
+		if (err.id === '22d05606-fbcf-421a-a2db-b32610dcfd1b') {
+			// wait for max 5 secounds
+			await new Promise(resolve => setTimeout(resolve, Math.random() * 5 * 1000));
+			return await signin(host, params);
+		}
+		throw err;
 	});
 }
 
@@ -133,4 +141,18 @@ export async function uploadFile(host: string, path: string, token: string): Pro
 			reject(err);
 		});
 	});
+}
+
+export function generateRandomUsername(): string {
+	return crypto.randomUUID().replaceAll('-', '').substring(0, 20);
+}
+
+export async function createAccount(host: string, adminClient: Misskey.api.APIClient): Promise<[Misskey.entities.SigninResponse, Misskey.api.APIClient]> {
+	const username = generateRandomUsername();
+	const password = crypto.randomUUID().replaceAll('-', '');
+	await (adminClient.request as Request)('admin/accounts/create', { username, password });
+	console.log(`Created an account: @${username}@${host}`);
+	const signinRes = await signin(host, { username, password });
+
+	return [signinRes, new Misskey.api.APIClient({ origin: `https://${host}`, credential: signinRes.i })];
 }
