@@ -15,7 +15,9 @@ export const ADMIN_PARAMS = { username: 'admin', password: 'admin' };
  * @param params sign in request params
  * @returns sign in response
  */
-async function signin(host: string, params: Misskey.entities.SigninRequest): Promise<Misskey.entities.SigninResponse> {
+export async function signin(host: string, params: Misskey.entities.SigninRequest): Promise<Misskey.entities.SigninResponse> {
+	// wait for 1 second to prevent hit rate limit
+	await new Promise(resolve => setTimeout(resolve, 1000));
 	console.log(`Sign in to @${params.username}@${host} ...`);
 	return await (new Misskey.api.APIClient({
 		origin: `https://${host}`,
