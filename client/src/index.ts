@@ -118,17 +118,17 @@ describe('Drive', () => {
 			deepStrictEqual(_whiteImage, _whiteImageInTwoServer);
 		});
 
-		test('Update', async () => {
-			const updatedWhiteImage = await (uploaderClient.request as Request)('drive/files/update', {
-				fileId: whiteImage.id,
-				name: 'updated_white.webp',
-				isSensitive: true,
-			});
+		const updatedWhiteImage = await (uploaderClient.request as Request)('drive/files/update', {
+			fileId: whiteImage.id,
+			name: 'updated_white.webp',
+			isSensitive: true,
+		});
 
-			const updatedWhiteImageInTwoServer = await (twoAdminClient.request as Request)('drive/files/show', {
-				fileId: whiteImageInTwoServer.id,
-			});
+		const updatedWhiteImageInTwoServer = await (twoAdminClient.request as Request)('drive/files/show', {
+			fileId: whiteImageInTwoServer.id,
+		});
 
+		await test('Update', async () => {
 			console.log(`one.local: ${JSON.stringify(updatedWhiteImage, null, '\t')}`);
 			console.log(`two.local: ${JSON.stringify(updatedWhiteImageInTwoServer, null, '\t')}`);
 			// FIXME: not updated with `drive/files/update`
@@ -136,21 +136,22 @@ describe('Drive', () => {
 			deepEqual(updatedWhiteImage.name, 'updated_white.webp');
 			deepEqual(updatedWhiteImageInTwoServer.isSensitive, false);
 			deepEqual(updatedWhiteImageInTwoServer.name, 'white.webp');
+		});
 
-			console.log('Re-update');
-			const noteWithUpdatedWhiteImage = (await (uploaderClient.request as Request)('notes/create', { fileIds: [updatedWhiteImage.id] })).createdNote;
-			const uri = `https://one.local/notes/${noteWithUpdatedWhiteImage.id}`;
-			const noteInTwoServer = await (async (): Promise<Misskey.entities.ApShowResponse & { type: 'Note' }> => {
-				const resolved = await (twoAdminClient.request as Request)('ap/show', { uri });
-				deepEqual(resolved.type, 'Note');
-				// @ts-expect-error we checked above assertion
-				return resolved;
-			})();
-			deepEqual(noteInTwoServer.object.uri, uri);
-			deepEqual(noteInTwoServer.object.files != null, true);
-			deepEqual(noteInTwoServer.object.files!.length, 1);
-			const reupdatedWhiteImageInTwoServer = noteInTwoServer.object.files![0];
+		const noteWithUpdatedWhiteImage = (await (uploaderClient.request as Request)('notes/create', { fileIds: [updatedWhiteImage.id] })).createdNote;
+		const uriUpdated = `https://one.local/notes/${noteWithUpdatedWhiteImage.id}`;
+		const noteWithUpdatedWhiteImageInTwoServer = await (async (): Promise<Misskey.entities.ApShowResponse & { type: 'Note' }> => {
+			const resolved = await (twoAdminClient.request as Request)('ap/show', { uri: uriUpdated });
+			deepEqual(resolved.type, 'Note');
+			// @ts-expect-error we checked above assertion
+			return resolved;
+		})();
+		deepEqual(noteWithUpdatedWhiteImageInTwoServer.object.uri, uriUpdated);
+		deepEqual(noteWithUpdatedWhiteImageInTwoServer.object.files != null, true);
+		deepEqual(noteWithUpdatedWhiteImageInTwoServer.object.files!.length, 1);
+		const reupdatedWhiteImageInTwoServer = noteWithUpdatedWhiteImageInTwoServer.object.files![0];
 
+		await test('Re-update with attaching to Note', async () => {
 			console.log(`two.local: ${JSON.stringify(reupdatedWhiteImageInTwoServer, null, '\t')}`);
 			// `isSensitive` is updated
 			deepEqual(reupdatedWhiteImageInTwoServer.isSensitive, true);
