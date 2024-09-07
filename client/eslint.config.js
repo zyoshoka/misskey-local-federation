@@ -7,7 +7,8 @@ export default [
 	{ files: ['**/*.{js,mjs,cjs,ts}'] },
 	{ languageOptions: { globals: globals.node } },
 	pluginJs.configs.recommended,
-	...tseslint.configs.recommended,
+	...tseslint.configs.strict,
+	...tseslint.configs.stylistic,
 	{
 		plugins: {
 			'@stylistic': stylistic,
@@ -22,6 +23,8 @@ export default [
 			'@stylistic/no-tabs': ['warn', { allowIndentationTabs: true }],
 			'@stylistic/semi': ['warn', 'always'],
 			'@stylistic/quotes': ['warn', 'single'],
+			'@typescript-eslint/no-dynamic-delete': ['warn'],
+			'@typescript-eslint/no-non-null-assertion': ['warn'],
 			'@typescript-eslint/no-unused-vars': ['warn'],
 		},
 	},

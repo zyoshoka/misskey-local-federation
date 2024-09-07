@@ -43,7 +43,7 @@ export async function signin(host: string, params: Misskey.entities.SigninReques
  * @param host server's FQDN
  * @returns admin account information if created, otherwise unspecified
  */
-async function createAdmin(host: string): Promise<Misskey.entities.SignupResponse | void> {
+async function createAdmin(host: string): Promise<Misskey.entities.SignupResponse | undefined> {
 	const client = new Misskey.api.APIClient({ origin: `https://${host}` });
 	return await (
 		client.request as Request
@@ -60,7 +60,7 @@ async function createAdmin(host: string): Promise<Misskey.entities.SignupRespons
 	}).catch(err => {
 		if (err.info.e.message === 'access denied') {
 			console.log(`Admin account already exists: @${ADMIN_PARAMS.username}@${host}`);
-			return;
+			return undefined;
 		}
 		throw err;
 	});
