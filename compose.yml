@@ -25,9 +25,9 @@ services:
   daemon:
     build: .
     depends_on:
-      one.local:
+      redis.one.local:
         condition: service_healthy
-      two.local:
+      redis.two.local:
         condition: service_healthy
     environment:
       - CLIENT_IP_ADDRESS=$CLIENT_IP_ADDRESS
