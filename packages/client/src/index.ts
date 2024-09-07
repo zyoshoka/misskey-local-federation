@@ -1,7 +1,7 @@
 import { deepEqual, deepStrictEqual } from 'node:assert';
 import { before, describe, test } from 'node:test';
 import * as Misskey from 'misskey-js';
-import { ADMIN_PARAMS, createAccount, fetchAdmin, generateRandomUsername, type Request, resolveAdmin, signin, uploadFile } from './utils.js';
+import { ADMIN_PARAMS, createAccount, fetchAdmin, type Request, resolveAdmin, uploadFile } from './utils.js';
 
 const [
 	[oneAdmin, oneAdminClient],
