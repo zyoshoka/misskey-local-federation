@@ -14,4 +14,4 @@ If the client exit with code 0, you can manually rerun with following command:
 docker compose up client
 ```
 
-If you hit rate limit erorrs, please change the client's IP address, which is specified in `./.env`.
+<!-- If you hit rate limit erorrs, please change the client's IP address, which is specified in `./.env`. -->

@@ -1,0 +1,15 @@
+{
+	"name": "client",
+	"description": "",
+	"main": "dist/index.js",
+	"scripts": {
+		"build": "tsc -p .",
+		"start": "tsx src/index.ts"
+	},
+	"author": "",
+	"type": "module",
+	"private": true,
+	"dependencies": {
+		"misskey-js": "2024.8.0"
+	}
+}

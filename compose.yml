@@ -4,7 +4,7 @@ include:
 
 services:
   client:
-    build: ./client
+    build: .
     depends_on:
       one.local:
         condition: service_healthy
@@ -14,12 +14,26 @@ services:
       - NODE_EXTRA_CA_CERTS=/usr/local/share/ca-certificates/rootCA.crt
     volumes:
       - ./certificates/rootCA.crt:/usr/local/share/ca-certificates/rootCA.crt:ro
-      - ./client/assets:/client/assets:ro
-      - ./client/src:/client/src:ro
-      - ./client/eslint.config.js:/client/eslint.config.js:ro
-      - ./client/pnpm-lock.yaml:/client/pnpm-lock.yaml:ro
-      - ./client/tsconfig.json:/client/tsconfig.json:ro
-    command: sh -c "pnpm install --frozen-lockfile && pnpm start"
+      - ./packages/client/assets:/workspace/packages/client/assets:ro
+      - ./packages/client/src:/workspace/packages/client/src:ro
+      - ./packages/client/package.json:/workspace/packages/client/package.json:ro
+      - ./packages/client/tsconfig.json:/workspace/packages/client/tsconfig.json:ro
+      - ./pnpm-lock.yaml:/workspace/pnpm-lock.yaml:ro
+      - ./pnpm-workspace.yaml:/workspace/pnpm-workspace.yaml:ro
+    command: sh -c "pnpm --filter client install && pnpm --filter client start"
 
-volumes:
-  node_modules:
+  daemon:
+    build: .
+    depends_on:
+      one.local:
+        condition: service_healthy
+      two.local:
+        condition: service_healthy
+    environment:
+      - CLIENT_IP_ADDRESS=$CLIENT_IP_ADDRESS
+    volumes:
+      - ./packages/daemon/src:/workspace/packages/daemon/src:ro
+      - ./packages/daemon/package.json:/workspace/packages/daemon/package.json:ro
+      - ./pnpm-lock.yaml:/workspace/pnpm-lock.yaml:ro
+      - ./pnpm-workspace.yaml:/workspace/pnpm-workspace.yaml:ro
+    command: sh -c "pnpm --filter daemon install && pnpm --filter daemon start"

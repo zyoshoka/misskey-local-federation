@@ -1,0 +1,16 @@
+{
+	"name": "daemon",
+	"description": "",
+	"main": "dist/index.js",
+	"scripts": {
+		"build": "tsc -p .",
+		"start": "tsx src/index.ts"
+	},
+	"author": "",
+	"type": "module",
+	"private": true,
+	"dependencies": {
+		"ioredis": "5.4.1",
+		"ip-cidr": "4.0.2"
+	}
+}

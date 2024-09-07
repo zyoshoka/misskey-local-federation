@@ -5,6 +5,12 @@ services:
       internal_network:
         ipv4_address: $CLIENT_IP_ADDRESS
 
+  daemon:
+    networks:
+      external_network:
+      internal_network_one:
+      internal_network_two:
+
   one.local:
     networks:
       - internal_network
