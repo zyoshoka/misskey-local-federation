@@ -23,4 +23,4 @@ export async function purgeLimit(host: string) {
 setInterval(() => {
 	purgeLimit('one.local');
 	purgeLimit('two.local');
-}, 2000);
+}, 1000);

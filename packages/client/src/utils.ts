@@ -38,8 +38,6 @@ export async function signin(host: string, params: Misskey.entities.SigninReques
 		return res;
 	}).catch(async err => {
 		if (err.id === '22d05606-fbcf-421a-a2db-b32610dcfd1b') {
-			// wait for max 5 secounds
-			await new Promise(resolve => setTimeout(resolve, Math.random() * 5 * 1000));
 			return await signin(host, params);
 		}
 		throw err;
@@ -86,14 +84,10 @@ export async function fetchAdmin(host: string): Promise<[Misskey.entities.Signin
 			if (err.id === '6cc579cc-885d-43d8-95c2-b8c7fc963280') {
 				await createAdmin(host);
 
-				// wait for 1 secound to prevent hit rate limit
-				await new Promise(resolve => setTimeout(resolve, 1000));
 				return await signin(host, ADMIN_PARAMS);
 			}
 			// hit rate limit
 			else if (err.id === '22d05606-fbcf-421a-a2db-b32610dcfd1b') {
-				// wait for 1 secound to prevent hit rate limit
-				await new Promise(resolve => setTimeout(resolve, 1000));
 				return await signin(host, ADMIN_PARAMS);
 			}
 			throw err;
