@@ -8,7 +8,7 @@ function getIpHash(ip: string) {
 
 export async function purgeLimit(host: string) {
 	const redisClient = new Redis({
-		host: `redis.${host}`,
+		host: 'redis.local',
 	});
 	const ipHash = getIpHash(process.env.CLIENT_IP_ADDRESS!);
 

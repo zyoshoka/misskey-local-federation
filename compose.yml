@@ -25,9 +25,7 @@ services:
   daemon:
     build: .
     depends_on:
-      redis.one.local:
-        condition: service_healthy
-      redis.two.local:
+      redis.local:
         condition: service_healthy
     environment:
       - CLIENT_IP_ADDRESS=$CLIENT_IP_ADDRESS
@@ -37,3 +35,12 @@ services:
       - ./pnpm-lock.yaml:/workspace/pnpm-lock.yaml:ro
       - ./pnpm-workspace.yaml:/workspace/pnpm-workspace.yaml:ro
     command: sh -c "pnpm --filter daemon install && pnpm --filter daemon start"
+
+  redis.local:
+    image: redis:7-alpine
+    volumes:
+      - ./volumes/redis:/data
+    healthcheck:
+      test: redis-cli ping
+      interval: 5s
+      retries: 20

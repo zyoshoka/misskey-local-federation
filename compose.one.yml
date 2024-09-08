@@ -21,7 +21,7 @@ services:
     depends_on:
       db.one.local:
         condition: service_healthy
-      redis.one.local:
+      redis.local:
         condition: service_healthy
     networks:
       - internal_network_one
@@ -30,18 +30,6 @@ services:
     volumes:
       - ./.config/default.one.yml:/misskey/.config/default.yml:ro
       - ./certificates/rootCA.crt:/usr/local/share/ca-certificates/rootCA.crt:ro
-
-  redis.one.local:
-    restart: always
-    image: redis:7-alpine
-    networks:
-      - internal_network_one
-    volumes:
-      - ./volumes/redis.one:/data
-    healthcheck:
-      test: redis-cli ping
-      interval: 5s
-      retries: 20
 
   db.one.local:
     restart: always
