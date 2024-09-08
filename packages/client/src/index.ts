@@ -11,11 +11,6 @@ const [
 	fetchAdmin('two.local'),
 ]);
 
-const [twoAdminInOneServer, oneAdminInTwoServer] = await Promise.all([
-	resolveAdmin('one.local', 'two.local', oneAdminClient),
-	resolveAdmin('two.local', 'one.local', twoAdminClient),
-]);
-
 describe('User', () => {
 	describe('Profile', async () => {
 		describe('Consistency of profile', async () => {
@@ -69,6 +64,11 @@ describe('User', () => {
 	});
 
 	describe('Follow / Unfollow', async () => {
+		const [twoAdminInOneServer, oneAdminInTwoServer] = await Promise.all([
+			resolveAdmin('one.local', 'two.local', oneAdminClient),
+			resolveAdmin('two.local', 'one.local', twoAdminClient),
+		]);
+
 		await describe('Follow @admin@one.local ==> @admin@two.local', async () => {
 			before(async () => {
 				console.log(`Following @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local ...`);
