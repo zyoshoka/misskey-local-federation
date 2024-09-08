@@ -32,7 +32,6 @@ services:
       - ./certificates/rootCA.crt:/usr/local/share/ca-certificates/rootCA.crt:ro
 
   db.two.local:
-    restart: always
     image: postgres:15-alpine
     networks:
       - internal_network_two
