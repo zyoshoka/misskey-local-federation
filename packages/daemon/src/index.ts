@@ -6,21 +6,24 @@ function getIpHash(ip: string) {
 	return `ip-${BigInt('0b' + prefix).toString(36)}`;
 }
 
-export async function purgeLimit(host: string) {
-	const redisClient = new Redis({
-		host: 'redis.local',
-	});
+export async function purgeLimit(host: string, client: Redis) {
 	const ipHash = getIpHash(process.env.CLIENT_IP_ADDRESS!);
 
-	const res = await redisClient.zrange(`${host}:limit:${ipHash}:signin`, 0, -1);
+	const res = await client.zrange(`${host}:limit:${ipHash}:signin`, 0, -1);
 	if (res.length !== 0) {
 		console.log(`${host}:limit:${ipHash}:signin - ${JSON.stringify(res)}`);
-		await redisClient.del(`${host}:limit:${ipHash}:signin`);
+		await client.del(`${host}:limit:${ipHash}:signin`);
 		console.log(`${host}:limit:${ipHash}:signin - deleted`);
 	}
 }
 
-setInterval(() => {
-	purgeLimit('one.local');
-	purgeLimit('two.local');
-}, 1000);
+{
+	const redisClient = new Redis({
+		host: 'redis.local',
+	});
+
+	setInterval(() => {
+		purgeLimit('one.local', redisClient);
+		purgeLimit('two.local', redisClient);
+	}, 1000);
+}
