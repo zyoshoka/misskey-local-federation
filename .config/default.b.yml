@@ -1,7 +1,7 @@
-url: https://one.local/
+url: https://b.local/
 port: 3000
 db:
-  host: db.one.local
+  host: db.b.local
   port: 5432
   db: misskey
   user: postgres

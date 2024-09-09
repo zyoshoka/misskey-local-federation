@@ -28,5 +28,5 @@ function generate {
     -days 500
 }
 
-generate one.local
-generate two.local
+generate a.local
+generate b.local

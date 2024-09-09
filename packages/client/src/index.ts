@@ -4,40 +4,40 @@ import * as Misskey from 'misskey-js';
 import { ADMIN_PARAMS, createAccount, fetchAdmin, type Request, resolveAdmin, uploadFile } from './utils.js';
 
 const [
-	[oneAdmin, oneAdminClient],
-	[twoAdmin, twoAdminClient],
+	[aAdmin, aAdminClient],
+	[bAdmin, bAdminClient],
 ] = await Promise.all([
-	fetchAdmin('one.local'),
-	fetchAdmin('two.local'),
+	fetchAdmin('a.local'),
+	fetchAdmin('b.local'),
 ]);
 
 describe('User', () => {
 	describe('Profile', async () => {
 		describe('Consistency of profile', async () => {
-			const [alice] = await createAccount('one.local', oneAdminClient);
+			const [alice] = await createAccount('a.local', aAdminClient);
 			const [
 				[, aliceWatcherC],
-				[, aliceWatcherInTwoServerC],
+				[, aliceWatcherInBServerC],
 			] = await Promise.all([
-				createAccount('one.local', oneAdminClient),
-				createAccount('two.local', twoAdminClient),
+				createAccount('a.local', aAdminClient),
+				createAccount('b.local', bAdminClient),
 			]);
 
-			const aliceInOneServer = await (aliceWatcherC.request as Request)('users/show', { userId: alice.id });
+			const aliceInAServer = await (aliceWatcherC.request as Request)('users/show', { userId: alice.id });
 
 			const resolved = await (async (): Promise<Misskey.entities.ApShowResponse & { type: 'User' }> => {
-				const resolved = await (aliceWatcherInTwoServerC.request as Request)('ap/show', {
-					uri: `https://one.local/@${aliceInOneServer.username}`,
+				const resolved = await (aliceWatcherInBServerC.request as Request)('ap/show', {
+					uri: `https://a.local/@${aliceInAServer.username}`,
 				});
 				deepEqual(resolved.type, 'User');
 				// @ts-expect-error we checked above assertion
 				return resolved;
 			})();
 
-			const aliceInTwoServer = await (aliceWatcherInTwoServerC.request as Request)('users/show', { userId: resolved.object.id });
+			const aliceInBServer = await (aliceWatcherInBServerC.request as Request)('users/show', { userId: resolved.object.id });
 
-			console.log(`one.local: ${JSON.stringify(aliceInOneServer, null, '\t')}`);
-			console.log(`two.local: ${JSON.stringify(aliceInTwoServer, null, '\t')}`);
+			console.log(`a.local: ${JSON.stringify(aliceInAServer, null, '\t')}`);
+			console.log(`b.local: ${JSON.stringify(aliceInBServer, null, '\t')}`);
 
 			const toBeDeleted: (keyof Misskey.entities.UserDetailedNotMe)[] = [
 				'id',
@@ -51,29 +51,29 @@ describe('User', () => {
 				'lastFetchedAt',
 				'publicReactions',
 			];
-			const _aliceInOneServer: Partial<Misskey.entities.UserDetailedNotMe> = structuredClone(aliceInOneServer);
-			const _aliceInTwoServer: Partial<Misskey.entities.UserDetailedNotMe> = structuredClone(aliceInTwoServer);
-			for (const alice of [_aliceInOneServer, _aliceInTwoServer]) {
+			const _aliceInAServer: Partial<Misskey.entities.UserDetailedNotMe> = structuredClone(aliceInAServer);
+			const _aliceInBServer: Partial<Misskey.entities.UserDetailedNotMe> = structuredClone(aliceInBServer);
+			for (const alice of [_aliceInAServer, _aliceInBServer]) {
 				for (const field of toBeDeleted) {
 					delete alice[field];
 				}
 			}
 
-			deepStrictEqual(_aliceInOneServer, _aliceInTwoServer);
+			deepStrictEqual(_aliceInAServer, _aliceInBServer);
 		});
 	});
 
 	describe('Follow / Unfollow', async () => {
-		const [twoAdminInOneServer, oneAdminInTwoServer] = await Promise.all([
-			resolveAdmin('one.local', 'two.local', oneAdminClient),
-			resolveAdmin('two.local', 'one.local', twoAdminClient),
+		const [bAdminInAServer, aAdminInBServer] = await Promise.all([
+			resolveAdmin('a.local', 'b.local', aAdminClient),
+			resolveAdmin('b.local', 'a.local', bAdminClient),
 		]);
 
-		await describe('Follow @admin@one.local ==> @admin@two.local', async () => {
+		await describe('Follow @admin@a.local ==> @admin@b.local', async () => {
 			before(async () => {
-				console.log(`Following @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local ...`);
-				await (oneAdminClient.request as Request)('following/create', { userId: twoAdminInOneServer.object.id });
-				console.log(`Followed @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local`);
+				console.log(`Following @${ADMIN_PARAMS.username}@b.local from @${ADMIN_PARAMS.username}@a.local ...`);
+				await (aAdminClient.request as Request)('following/create', { userId: bAdminInAServer.object.id });
+				console.log(`Followed @${ADMIN_PARAMS.username}@b.local from @${ADMIN_PARAMS.username}@a.local`);
 
 				// wait for 1 secound
 				await new Promise(resolve => setTimeout(resolve, 1000));
@@ -82,24 +82,24 @@ describe('User', () => {
 			test('Check consistency with `users/following` and `users/followers` endpoints', async () => {
 				await Promise.all([
 					deepEqual(
-						(await (oneAdminClient.request as Request)('users/following', { userId: oneAdmin.id }))
-							.some(v => v.followeeId === twoAdminInOneServer.object.id),
+						(await (aAdminClient.request as Request)('users/following', { userId: aAdmin.id }))
+							.some(v => v.followeeId === bAdminInAServer.object.id),
 						true,
 					),
 					deepEqual(
-						(await (twoAdminClient.request as Request)('users/followers', { userId: twoAdmin.id }))
-							.some(v => v.followerId === oneAdminInTwoServer.object.id),
+						(await (bAdminClient.request as Request)('users/followers', { userId: bAdmin.id }))
+							.some(v => v.followerId === aAdminInBServer.object.id),
 						true,
 					),
 				]);
 			});
 		});
 
-		await describe('Unfollow @admin@one.local ==> @admin@two.local', async () => {
+		await describe('Unfollow @admin@a.local ==> @admin@b.local', async () => {
 			before(async () => {
-				console.log(`Unfollowing @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local ...`);
-				await (oneAdminClient.request as Request)('following/delete', { userId: twoAdminInOneServer.object.id });
-				console.log(`Unfollowed @${ADMIN_PARAMS.username}@two.local from @${ADMIN_PARAMS.username}@one.local`);
+				console.log(`Unfollowing @${ADMIN_PARAMS.username}@b.local from @${ADMIN_PARAMS.username}@a.local ...`);
+				await (aAdminClient.request as Request)('following/delete', { userId: bAdminInAServer.object.id });
+				console.log(`Unfollowed @${ADMIN_PARAMS.username}@b.local from @${ADMIN_PARAMS.username}@a.local`);
 
 				// wait for 1 secound
 				await new Promise(resolve => setTimeout(resolve, 1000));
@@ -108,13 +108,13 @@ describe('User', () => {
 			test('Check consistency with `users/following` and `users/followers` endpoints', async () => {
 				await Promise.all([
 					deepEqual(
-						(await (oneAdminClient.request as Request)('users/following', { userId: oneAdmin.id }))
-							.some(v => v.followeeId === twoAdminInOneServer.object.id),
+						(await (aAdminClient.request as Request)('users/following', { userId: aAdmin.id }))
+							.some(v => v.followeeId === bAdminInAServer.object.id),
 						false,
 					),
 					deepEqual(
-						(await (twoAdminClient.request as Request)('users/followers', { userId: twoAdmin.id }))
-							.some(v => v.followerId === oneAdminInTwoServer.object.id),
+						(await (bAdminClient.request as Request)('users/followers', { userId: bAdmin.id }))
+							.some(v => v.followerId === aAdminInBServer.object.id),
 						false,
 					),
 				]);
@@ -124,26 +124,26 @@ describe('User', () => {
 });
 
 describe('Drive', () => {
-	describe('Upload in one.local and resolve from two.local', async () => {
-		const [uploader, uploaderClient] = await createAccount('one.local', oneAdminClient);
+	describe('Upload in a.local and resolve from b.local', async () => {
+		const [uploader, uploaderClient] = await createAccount('a.local', aAdminClient);
 
-		const whiteImage = await uploadFile('one.local', './assets/white.webp', uploader.i);
+		const whiteImage = await uploadFile('a.local', './assets/white.webp', uploader.i);
 		const noteWithWhiteImage = (await (uploaderClient.request as Request)('notes/create', { fileIds: [whiteImage.id] })).createdNote;
-		const uri = `https://one.local/notes/${noteWithWhiteImage.id}`;
-		const noteInTwoServer = await (async (): Promise<Misskey.entities.ApShowResponse & { type: 'Note' }> => {
-			const resolved = await (twoAdminClient.request as Request)('ap/show', { uri });
+		const uri = `https://a.local/notes/${noteWithWhiteImage.id}`;
+		const noteInBServer = await (async (): Promise<Misskey.entities.ApShowResponse & { type: 'Note' }> => {
+			const resolved = await (bAdminClient.request as Request)('ap/show', { uri });
 			deepEqual(resolved.type, 'Note');
 			// @ts-expect-error we checked above assertion
 			return resolved;
 		})();
-		deepEqual(noteInTwoServer.object.uri, uri);
-		deepEqual(noteInTwoServer.object.files != null, true);
-		deepEqual(noteInTwoServer.object.files!.length, 1);
-		const whiteImageInTwoServer = noteInTwoServer.object.files![0];
+		deepEqual(noteInBServer.object.uri, uri);
+		deepEqual(noteInBServer.object.files != null, true);
+		deepEqual(noteInBServer.object.files!.length, 1);
+		const whiteImageInBServer = noteInBServer.object.files![0];
 
 		await test('Check consistency of DriveFile', () => {
-			console.log(`one.local: ${JSON.stringify(whiteImage, null, '\t')}`);
-			console.log(`two.local: ${JSON.stringify(whiteImageInTwoServer, null, '\t')}`);
+			console.log(`a.local: ${JSON.stringify(whiteImage, null, '\t')}`);
+			console.log(`b.local: ${JSON.stringify(whiteImageInBServer, null, '\t')}`);
 
 			const toBeDeleted: (keyof Misskey.entities.DriveFile)[] = [
 				'id',
@@ -154,15 +154,15 @@ describe('Drive', () => {
 				'userId',
 			];
 			const _whiteImage: Partial<Misskey.entities.DriveFile> = structuredClone(whiteImage);
-			const _whiteImageInTwoServer: Partial<Misskey.entities.DriveFile> = structuredClone(whiteImageInTwoServer);
+			const _whiteImageInBServer: Partial<Misskey.entities.DriveFile> = structuredClone(whiteImageInBServer);
 
-			for (const image of [_whiteImage, _whiteImageInTwoServer]) {
+			for (const image of [_whiteImage, _whiteImageInBServer]) {
 				for (const field of toBeDeleted) {
 					delete image[field];
 				}
 			}
 
-			deepStrictEqual(_whiteImage, _whiteImageInTwoServer);
+			deepStrictEqual(_whiteImage, _whiteImageInBServer);
 		});
 
 		const updatedWhiteImage = await (uploaderClient.request as Request)('drive/files/update', {
@@ -171,39 +171,39 @@ describe('Drive', () => {
 			isSensitive: true,
 		});
 
-		const updatedWhiteImageInTwoServer = await (twoAdminClient.request as Request)('drive/files/show', {
-			fileId: whiteImageInTwoServer.id,
+		const updatedWhiteImageInBServer = await (bAdminClient.request as Request)('drive/files/show', {
+			fileId: whiteImageInBServer.id,
 		});
 
 		await test('Update', async () => {
-			console.log(`one.local: ${JSON.stringify(updatedWhiteImage, null, '\t')}`);
-			console.log(`two.local: ${JSON.stringify(updatedWhiteImageInTwoServer, null, '\t')}`);
+			console.log(`a.local: ${JSON.stringify(updatedWhiteImage, null, '\t')}`);
+			console.log(`b.local: ${JSON.stringify(updatedWhiteImageInBServer, null, '\t')}`);
 			// FIXME: not updated with `drive/files/update`
 			deepEqual(updatedWhiteImage.isSensitive, true);
 			deepEqual(updatedWhiteImage.name, 'updated_white.webp');
-			deepEqual(updatedWhiteImageInTwoServer.isSensitive, false);
-			deepEqual(updatedWhiteImageInTwoServer.name, 'white.webp');
+			deepEqual(updatedWhiteImageInBServer.isSensitive, false);
+			deepEqual(updatedWhiteImageInBServer.name, 'white.webp');
 		});
 
 		const noteWithUpdatedWhiteImage = (await (uploaderClient.request as Request)('notes/create', { fileIds: [updatedWhiteImage.id] })).createdNote;
-		const uriUpdated = `https://one.local/notes/${noteWithUpdatedWhiteImage.id}`;
-		const noteWithUpdatedWhiteImageInTwoServer = await (async (): Promise<Misskey.entities.ApShowResponse & { type: 'Note' }> => {
-			const resolved = await (twoAdminClient.request as Request)('ap/show', { uri: uriUpdated });
+		const uriUpdated = `https://a.local/notes/${noteWithUpdatedWhiteImage.id}`;
+		const noteWithUpdatedWhiteImageInBServer = await (async (): Promise<Misskey.entities.ApShowResponse & { type: 'Note' }> => {
+			const resolved = await (bAdminClient.request as Request)('ap/show', { uri: uriUpdated });
 			deepEqual(resolved.type, 'Note');
 			// @ts-expect-error we checked above assertion
 			return resolved;
 		})();
-		deepEqual(noteWithUpdatedWhiteImageInTwoServer.object.uri, uriUpdated);
-		deepEqual(noteWithUpdatedWhiteImageInTwoServer.object.files != null, true);
-		deepEqual(noteWithUpdatedWhiteImageInTwoServer.object.files!.length, 1);
-		const reupdatedWhiteImageInTwoServer = noteWithUpdatedWhiteImageInTwoServer.object.files![0];
+		deepEqual(noteWithUpdatedWhiteImageInBServer.object.uri, uriUpdated);
+		deepEqual(noteWithUpdatedWhiteImageInBServer.object.files != null, true);
+		deepEqual(noteWithUpdatedWhiteImageInBServer.object.files!.length, 1);
+		const reupdatedWhiteImageInBServer = noteWithUpdatedWhiteImageInBServer.object.files![0];
 
 		await test('Re-update with attaching to Note', async () => {
-			console.log(`two.local: ${JSON.stringify(reupdatedWhiteImageInTwoServer, null, '\t')}`);
+			console.log(`b.local: ${JSON.stringify(reupdatedWhiteImageInBServer, null, '\t')}`);
 			// `isSensitive` is updated
-			deepEqual(reupdatedWhiteImageInTwoServer.isSensitive, true);
+			deepEqual(reupdatedWhiteImageInBServer.isSensitive, true);
 			// FIXME: but `name` is not updated
-			deepEqual(reupdatedWhiteImageInTwoServer.name, 'white.webp');
+			deepEqual(reupdatedWhiteImageInBServer.name, 'white.webp');
 		});
 	});
 });

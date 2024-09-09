@@ -23,7 +23,7 @@ export async function purgeLimit(host: string, client: Redis) {
 	});
 
 	setInterval(() => {
-		purgeLimit('one.local', redisClient);
-		purgeLimit('two.local', redisClient);
+		purgeLimit('a.local', redisClient);
+		purgeLimit('b.local', redisClient);
 	}, 1000);
 }

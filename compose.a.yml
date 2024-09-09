@@ -1,54 +1,54 @@
 services:
-  two.local:
+  a.local:
     image: nginx
     depends_on:
-      misskey.two.local:
+      misskey.a.local:
         condition: service_healthy
     networks:
-      - internal_network_two
+      - internal_network_a
     volumes:
-      - ./.config/two.local.conf:/etc/nginx/conf.d/two.local.conf:ro
-      - ./certificates/two.local.crt:/etc/nginx/certificates/two.local.crt:ro
-      - ./certificates/two.local.key:/etc/nginx/certificates/two.local.key:ro
+      - ./.config/a.local.conf:/etc/nginx/conf.d/a.local.conf:ro
+      - ./certificates/a.local.crt:/etc/nginx/certificates/a.local.crt:ro
+      - ./certificates/a.local.key:/etc/nginx/certificates/a.local.key:ro
       - ./certificates/rootCA.crt:/etc/nginx/certificates/rootCA.crt:ro
     healthcheck:
       test: service nginx status
       interval: 5s
       retries: 20
 
-  misskey.two.local:
-    image: misskey/misskey:$MISSKEY_TWO_VERSION
+  misskey.a.local:
+    image: misskey/misskey:$MISSKEY_A_VERSION
     depends_on:
-      db.two.local:
+      db.a.local:
         condition: service_healthy
       redis.local:
         condition: service_healthy
     networks:
-      - internal_network_two
+      - internal_network_a
     env_file:
       - ./.config/docker.env
     volumes:
-      - ./.config/default.two.yml:/misskey/.config/default.yml:ro
+      - ./.config/default.a.yml:/misskey/.config/default.yml:ro
       - ./certificates/rootCA.crt:/usr/local/share/ca-certificates/rootCA.crt:ro
 
-  db.two.local:
+  db.a.local:
     image: postgres:15-alpine
     networks:
-      - internal_network_two
+      - internal_network_a
     env_file:
       - ./.config/docker.env
     volumes:
-      - ./volumes/db.two:/var/lib/postgresql/data
+      - ./volumes/db.a:/var/lib/postgresql/data
     healthcheck:
-      test: "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"
+      test: pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB
       interval: 5s
       retries: 20
 
 networks:
-  internal_network_two:
+  internal_network_a:
     internal: true
     driver: bridge
     ipam:
       config:
-        - subnet: 172.22.0.0/16
-          ip_range: 172.22.0.0/24
+        - subnet: 172.21.0.0/16
+          ip_range: 172.21.0.0/24

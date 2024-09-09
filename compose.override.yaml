@@ -8,28 +8,28 @@ services:
   daemon:
     networks:
       external_network:
-      internal_network_one:
-      internal_network_two:
+      internal_network_a:
+      internal_network_b:
 
   redis.local:
     networks:
-      internal_network_one:
-      internal_network_two:
+      internal_network_a:
+      internal_network_b:
 
-  one.local:
+  a.local:
     networks:
       - internal_network
 
-  misskey.one.local:
+  misskey.a.local:
     networks:
       - external_network
       - internal_network
 
-  two.local:
+  b.local:
     networks:
       - internal_network
 
-  misskey.two.local:
+  misskey.b.local:
     networks:
       - external_network
       - internal_network

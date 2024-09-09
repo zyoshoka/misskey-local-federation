@@ -1,7 +1,7 @@
-url: https://two.local/
+url: https://a.local/
 port: 3000
 db:
-  host: db.two.local
+  host: db.a.local
   port: 5432
   db: misskey
   user: postgres
