@@ -1,4 +1,8 @@
 # `misskey-local-federation`
+> [!NOTE]
+> This project have been merged into upstream.
+> See https://github.com/misskey-dev/misskey/pull/14582
+
 You can demonstrate Misskey federation with Docker.
 
 ## Setup
